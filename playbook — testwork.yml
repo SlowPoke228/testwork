@@ -69,5 +69,11 @@
     docker_compose:
       project_src: /home/user/docker
       pull: yes
+  - name: Restart Nginx
+    docker_compose:
+      project_src: /home/user/docker
+      build: yes
+      restarted: yes
+    register: output
   - name: Remove unused dependencies
     apt: autoremove=true
