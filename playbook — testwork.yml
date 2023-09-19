@@ -1,0 +1,73 @@
+---
+- name: Install webapps
+  hosts: all
+  become: true
+  collections:
+    - community.general
+  vars:
+    http_port: 80
+    https_port: 443
+  tasks:
+  - name: Update all packages
+    apt: name="*" state=latest update_cache=true force_apt_get=true
+  - name: Install required system packages
+    apt:
+      pkg:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - python3-pip
+        - virtualenv
+        - python3-setuptools
+      state: latest
+      update_cache: true
+  - name: Add Docker GPG apt Key
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+  - name: Add Docker Repository
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu focal stable
+      state: present
+  - name: Install docker-ce and docker-compose
+    apt:
+      pkg:
+       - docker-ce
+       - docker-compose
+      state: latest
+      update_cache: true
+  - name: Create a directory if it does not exist
+    file:
+      path: "{{ item }}"
+      state: directory
+    loop:
+      - /home/user/docker/docker/nginx
+      - /home/user/docker/docker/php
+      - /home/user/docker/www/public
+  - name: Pull nginx dockerfile
+    template:
+      src: nginxDockerfile
+      dest: /home/user/docker/docker/nginx/Dockerfile
+  - name: Pull nginx config tamplate
+    template:
+      src: www.conf
+      dest: /home/user/docker/docker/nginx/www.conf
+  - name: Pull php dockerfile
+    template:
+      src: phpDockerfile
+      dest: /home/user/docker/docker/php/Dockerfile
+  - name: Pull index.php
+    template:
+      src: index.php
+      dest: /home/user/docker/www/public
+  - name: Pull docker-compose.yml
+    template:
+      src: docker-compose.yml
+      dest: /home/user/docker/docker-compose.yml
+  - name: Pull and Run docker containers
+    docker_compose:
+      project_src: /home/user/docker
+      pull: yes
+  - name: Remove unused dependencies
+    apt: autoremove=true
